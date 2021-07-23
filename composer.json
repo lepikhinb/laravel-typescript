@@ -1,0 +1,59 @@
+{
+    "name": "based/laravel-typescript",
+    "description": "This is my package TypeScript",
+    "keywords": [
+        "Based",
+        "laravel",
+        "typescript"
+    ],
+    "homepage": "https://github.com/lepikhinb/laravel-typescript",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Boris Lepikhin",
+            "email": "boris@lepikhin.com",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^8.0",
+        "doctrine/dbal": "^3.1",
+        "illuminate/contracts": "^8.37",
+        "spatie/laravel-package-tools": "^1.4.3"
+    },
+    "require-dev": {
+        "brianium/paratest": "^6.2",
+        "nunomaduro/collision": "^5.3",
+        "orchestra/testbench": "^6.15",
+        "phpunit/phpunit": "^9.3",
+        "vimeo/psalm": "^4.8"
+    },
+    "autoload": {
+        "psr-4": {
+            "Based\\TypeScript\\": "src",
+            "Based\\TypeScript\\Tests\\Models\\": "tests/models"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Based\\TypeScript\\Tests\\": "tests"
+        }
+    },
+    "scripts": {
+        "psalm": "vendor/bin/psalm",
+        "test": "./vendor/bin/testbench package:test --parallel --no-coverage",
+        "test-coverage": "vendor/bin/phpunit --coverage-html coverage"
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Based\\TypeScript\\TypeScriptServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
