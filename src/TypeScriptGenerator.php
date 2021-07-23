@@ -28,7 +28,7 @@ class TypeScriptGenerator
                     ->whenNotEmpty(function (Collection $definitions) use ($namespace) {
                         $tsNamespace = str_replace('\\', '.', $namespace);
 
-                        return $definitions->prepend("export namespace {$tsNamespace} {")->push('}');
+                        return $definitions->prepend("declare namespace {$tsNamespace} {")->push('}');
                     })
                     ->join(PHP_EOL);
             })
