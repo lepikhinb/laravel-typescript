@@ -14,7 +14,7 @@ class TypeScriptGenerator
     public function __construct(
         public array $generators,
         public string $output,
-        public ?string $composerPath =  null
+        public ?string $composerPath = null
     ) {
         $this->composerPath ??= base_path('composer.json');
     }
@@ -22,25 +22,37 @@ class TypeScriptGenerator
     public function execute()
     {
         $types = $this->phpClasses()
-            ->map(function (ReflectionClass $reflection) {
-                $generator = collect($this->generators)
-                    ->filter(fn (string $generator, string $baseClass) => $reflection->isSubclassOf($baseClass))
-                    ->values()
-                    ->first();
+            ->map(function (Collection $reflections, string $namespace) {
+                return $reflections->map(fn (ReflectionClass $reflection) => $this->generate($reflection))
+                    ->whereNotNull()
+                    ->whenNotEmpty(function (Collection $definitions) use ($namespace) {
+                        $tsNamespace = str_replace('\\', '.', $namespace);
 
-                if (!$generator) {
-                    return null;
-                }
-
-                return (new $generator)->generate($reflection);
+                        return $definitions->prepend("export namespace {$tsNamespace} {")->push('}');
+                    })
+                    ->join(PHP_EOL);
             })
-            ->whereNotNull()
-            ->join(PHP_EOL . PHP_EOL);
+            ->reject(fn (string $namespaceDefinition) => empty($namespaceDefinition))
+            ->join(PHP_EOL);
 
         file_put_contents($this->output, $types);
     }
 
-    public function phpClasses(): Collection
+    protected function generate(ReflectionClass $reflection): ?string
+    {
+        $generator = collect($this->generators)
+            ->filter(fn (string $generator, string $baseClass) => $reflection->isSubclassOf($baseClass))
+            ->values()
+            ->first();
+
+        if (!$generator) {
+            return null;
+        }
+
+        return (new $generator)->generate($reflection);
+    }
+
+    protected function phpClasses(): Collection
     {
         $composer = json_decode(file_get_contents($this->composerPath));
 
@@ -66,6 +78,9 @@ class TypeScriptGenerator
                     ->map(fn (string $className) => new ReflectionClass($className))
                     ->reject(fn (ReflectionClass $reflection) => $reflection->isAbstract())
                     ->values();
+            })
+            ->groupBy(function (ReflectionClass $reflection) {
+                return $reflection->getNamespaceName();
             });
     }
 }

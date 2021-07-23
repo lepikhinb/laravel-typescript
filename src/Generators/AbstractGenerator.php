@@ -15,23 +15,15 @@ abstract class AbstractGenerator implements Generator
         $this->boot();
 
         return <<<TS
-        export namespace {$this->tsNamespace()}
-        {
             export interface {$this->tsClassName()} {
                 {$this->getDefinition()}
             }
-        }
         TS;
     }
 
     protected function boot(): void
     {
         //
-    }
-
-    protected function tsNamespace(): string
-    {
-        return str_replace('\\', '.', $this->reflection->getNamespaceName());
     }
 
     protected function tsClassName(): string
