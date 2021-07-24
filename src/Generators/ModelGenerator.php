@@ -78,7 +78,9 @@ class ModelGenerator extends AbstractGenerator
                 return $this->columns->contains(fn (Column $column) => $column->getName() == $property);
             })
             ->map(function (ReflectionMethod $method, string $property) {
-                return "readonly {$property}?: {$this->getNativeType($method->getReturnType()?->getName())};";
+                $type = $this->getNativeType((string) $method->getReturnType());
+
+                return "readonly {$property}?: {$type};";
             })
             ->join(PHP_EOL . '        ');
     }
