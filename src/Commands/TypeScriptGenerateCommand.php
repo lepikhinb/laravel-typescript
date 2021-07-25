@@ -12,7 +12,7 @@ class TypeScriptGenerateCommand extends Command
 
     public $description = 'Generate TypeScript definitions from PHP classes';
 
-    public function handle(Package $package)
+    public function handle()
     {
         $generator = new TypeScriptGenerator(
             ...config('typescript')

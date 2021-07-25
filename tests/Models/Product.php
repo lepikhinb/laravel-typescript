@@ -23,8 +23,13 @@ class Product extends Model
         //
     }
 
-    public function getTypedAccessorAttribute(): string
+    public function getTypedAccessorAttribute(): ?string
     {
         return 'based-department';
+    }
+
+    public function getUnionTypedAccessorAttribute(): string | bool | null
+    {
+        return true;
     }
 }

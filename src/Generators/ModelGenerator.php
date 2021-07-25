@@ -2,6 +2,8 @@
 
 namespace Based\TypeScript\Generators;
 
+use Based\TypeScript\Definitions\TypeScriptProperty;
+use Based\TypeScript\Definitions\TypeScriptType;
 use Doctrine\DBAL\Schema\Column;
 use Doctrine\DBAL\Types\Types;
 use Illuminate\Database\Eloquent\Model;
@@ -51,13 +53,11 @@ class ModelGenerator extends AbstractGenerator
     protected function getProperties(): string
     {
         return $this->columns->map(function (Column $column) {
-            $type = $this->getPropertyType($column->getType()->getName());
-
-            if (!$column->getNotnull()) {
-                $type .= ' | null';
-            }
-
-            return "{$column->getName()}: {$type};";
+            return (string) new TypeScriptProperty(
+                name: $column->getName(),
+                types: $this->getPropertyType($column->getType()->getName()),
+                nullable: !$column->getNotnull()
+            );
         })
             ->join(PHP_EOL . '        ');
     }
@@ -78,9 +78,12 @@ class ModelGenerator extends AbstractGenerator
                 return $this->columns->contains(fn (Column $column) => $column->getName() == $property);
             })
             ->map(function (ReflectionMethod $method, string $property) {
-                $type = $this->getNativeType((string) $method->getReturnType());
-
-                return "readonly {$property}?: {$type};";
+                return (string) new TypeScriptProperty(
+                    name: $property,
+                    types: TypeScriptType::fromMethod($method),
+                    optional: true,
+                    readonly: true
+                );
             })
             ->join(PHP_EOL . '        ');
     }
@@ -105,7 +108,12 @@ class ModelGenerator extends AbstractGenerator
                     ->isEmpty();
             })
             ->map(function (ReflectionMethod $method) {
-                return "{$method->getName()}?: {$this->getRelationTypehint($method)};";
+                return (string) new TypeScriptProperty(
+                    name: $method->getName(),
+                    types: $this->getRelationType($method),
+                    optional: true,
+                    nullable: true
+                );
             })
             ->join(PHP_EOL . '        ');
     }
@@ -117,83 +125,54 @@ class ModelGenerator extends AbstractGenerator
             ->reject(fn (ReflectionMethod $method) => $method->getNumberOfParameters());
     }
 
-    protected function getPropertyType(string $type): string
+    protected function getPropertyType(string $type): string | array
     {
         return match ($type) {
-            Types::ARRAY => 'Array<any> | any',
-            Types::ASCII_STRING => 'string',
-            Types::BIGINT => 'number',
-            Types::BINARY => 'string',
-            Types::BLOB => 'string',
-            Types::BOOLEAN => 'boolean',
-            Types::DATE_MUTABLE => 'string',
-            Types::DATE_IMMUTABLE => 'string',
-            Types::DATEINTERVAL => 'string',
-            Types::DATETIME_MUTABLE => 'string',
-            Types::DATETIME_IMMUTABLE => 'string',
-            Types::DATETIMETZ_MUTABLE => 'string',
-            Types::DATETIMETZ_IMMUTABLE => 'string',
-            Types::DECIMAL => 'number',
-            Types::FLOAT => 'number',
-            Types::GUID => 'string',
-            Types::INTEGER => 'number',
-            Types::JSON => 'Array<any> | any',
-            Types::OBJECT => 'object',
-            Types::SIMPLE_ARRAY => 'Array<any> | any',
-            Types::SMALLINT => 'number',
-            Types::STRING => 'string',
-            Types::TEXT => 'string',
-            Types::TIME_MUTABLE => 'number',
-            Types::TIME_IMMUTABLE => 'number',
-            default => 'any',
+            Types::ARRAY => [TypeScriptType::array(), TypeScriptType::ANY],
+            Types::ASCII_STRING => TypeScriptType::STRING,
+            Types::BIGINT => TypeScriptType::NUMBER,
+            Types::BINARY => TypeScriptType::STRING,
+            Types::BLOB => TypeScriptType::STRING,
+            Types::BOOLEAN => TypeScriptType::BOOLEAN,
+            Types::DATE_MUTABLE => TypeScriptType::STRING,
+            Types::DATE_IMMUTABLE => TypeScriptType::STRING,
+            Types::DATEINTERVAL => TypeScriptType::STRING,
+            Types::DATETIME_MUTABLE => TypeScriptType::STRING,
+            Types::DATETIME_IMMUTABLE => TypeScriptType::STRING,
+            Types::DATETIMETZ_MUTABLE => TypeScriptType::STRING,
+            Types::DATETIMETZ_IMMUTABLE => TypeScriptType::STRING,
+            Types::DECIMAL => TypeScriptType::NUMBER,
+            Types::FLOAT => TypeScriptType::NUMBER,
+            Types::GUID => TypeScriptType::STRING,
+            Types::INTEGER => TypeScriptType::NUMBER,
+            Types::JSON => [TypeScriptType::array(), TypeScriptType::ANY],
+            Types::OBJECT => TypeScriptType::ANY,
+            Types::SIMPLE_ARRAY => [TypeScriptType::array(), TypeScriptType::ANY],
+            Types::SMALLINT => TypeScriptType::NUMBER,
+            Types::STRING => TypeScriptType::STRING,
+            Types::TEXT => TypeScriptType::STRING,
+            Types::TIME_MUTABLE => TypeScriptType::NUMBER,
+            Types::TIME_IMMUTABLE => TypeScriptType::NUMBER,
+            default => TypeScriptType::ANY,
         };
     }
 
-    protected function getNativeType(?string $type): string
-    {
-        return match ($type) {
-            'int' => 'number',
-            'float' => 'number',
-            'string' => 'string',
-            'array' => 'Array<any> | any',
-            'object' => 'any',
-            'null' => 'null',
-            default => 'any',
-        };
-    }
-
-    protected function getRelationTypehint(ReflectionMethod $method): string
+    protected function getRelationType(ReflectionMethod $method): string
     {
         $relationReturn = $method->invoke($this->model);
-        $related = get_class($relationReturn->getRelated());
+        $related = str_replace('\\', '.', get_class($relationReturn->getRelated()));
 
         return match (get_class($relationReturn)) {
-            HasMany::class => $this->getManyHint($related),
-            BelongsToMany::class => $this->getManyHint($related),
-            HasManyThrough::class => $this->getManyHint($related),
-            MorphMany::class => $this->getManyHint($related),
-            MorphToMany::class => $this->getManyHint($related),
-            HasOne::class => $this->getOneHint($related),
-            BelongsTo::class => $this->getOneHint($related),
-            MorphOne::class => $this->getOneHint($related),
-            HasOneThrough::class => $this->getOneHint($related),
+            HasMany::class => TypeScriptType::array($related),
+            BelongsToMany::class => TypeScriptType::array($related),
+            HasManyThrough::class => TypeScriptType::array($related),
+            MorphMany::class => TypeScriptType::array($related),
+            MorphToMany::class => TypeScriptType::array($related),
+            HasOne::class => $related,
+            BelongsTo::class => $related,
+            MorphOne::class => $related,
+            HasOneThrough::class => $related,
             default => 'any',
         };
-    }
-
-    protected function getManyHint(string $related): string
-    {
-        return (string) Str::of($related)
-            ->replace('\\', '.')
-            ->prepend('Array<')
-            ->append('>')
-            ->append(' | null');
-    }
-
-    protected function getOneHint(string $related): string
-    {
-        return (string) Str::of($related)
-            ->replace('\\', '.')
-            ->append(' | null');
     }
 }
