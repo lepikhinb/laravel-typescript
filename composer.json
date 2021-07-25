@@ -1,8 +1,7 @@
 {
     "name": "based/laravel-typescript",
-    "description": "This is my package TypeScript",
+    "description": "Transform Laravel models into TypeScript interfaces",
     "keywords": [
-        "Based",
         "laravel",
         "typescript"
     ],
