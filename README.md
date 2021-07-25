@@ -1,4 +1,4 @@
-# Laravel Typescript
+# Laravel TypeScript
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/based/laravel-typescript.svg?style=flat-square)](https://packagist.org/packages/based/laravel-typescript)
 [![GitHub Tests Action Status](https://img.shields.io/github/workflow/status/lepikhinb/laravel-typescript/run-tests?label=tests)](https://github.com/lepikhinb/laravel-typescript/actions?query=workflow%3Arun-tests+branch%3Amain)
