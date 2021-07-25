@@ -9,4 +9,6 @@ return [
     ],
 
     'output' => resource_path('js/models.d.ts'),
+
+    'autoloadDev' => false,
 ];

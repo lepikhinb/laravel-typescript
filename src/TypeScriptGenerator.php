@@ -14,9 +14,8 @@ class TypeScriptGenerator
     public function __construct(
         public array $generators,
         public string $output,
-        public ?string $composerPath = null
+        public bool $autoloadDev
     ) {
-        $this->composerPath ??= base_path('composer.json');
     }
 
     public function execute()
@@ -54,9 +53,14 @@ class TypeScriptGenerator
 
     protected function phpClasses(): Collection
     {
-        $composer = json_decode(file_get_contents($this->composerPath));
+        $composer = json_decode(file_get_contents(realpath('composer.json')));
 
         return collect($composer->autoload->{'psr-4'})
+            ->when($this->autoloadDev, function (Collection $paths) use ($composer) {
+                return $paths->merge(
+                    collect($composer->{'autoload-dev'}?->{'psr-4'})
+                );
+            })
             ->flatMap(function (string $path, string $namespace) {
                 return collect((new Finder)->in($path)->name('*.php')->files())
                     ->map(function (SplFileInfo $file) use ($path, $namespace) {

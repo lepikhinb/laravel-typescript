@@ -15,8 +15,7 @@ class TypeScriptGenerateCommand extends Command
     public function handle(Package $package)
     {
         $generator = new TypeScriptGenerator(
-            config('typescript.generators'),
-            config('typescript.output')
+            ...config('typescript')
         );
 
         $generator->execute();

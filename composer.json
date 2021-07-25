@@ -31,8 +31,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Based\\TypeScript\\": "src",
-            "Based\\TypeScript\\Tests\\Models\\": "tests/Models"
+            "Based\\TypeScript\\": "src"
         }
     },
     "autoload-dev": {

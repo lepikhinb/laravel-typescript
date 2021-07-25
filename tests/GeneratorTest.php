@@ -12,12 +12,12 @@ class GeneratorTest extends TestCase
     /** @test */
     public function it_works()
     {
-        $output = @tempnam('/tmp', 'types.d.ts');
+        $output = @tempnam('/tmp', 'models.d.ts');
 
         $generator = new TypeScriptGenerator(
-            config('typescript.generators'),
-            $output,
-            __DIR__ . '/../composer.json'
+            generators: config('typescript.generators'),
+            output: $output,
+            autoloadDev: true
         );
 
         $generator->execute();
