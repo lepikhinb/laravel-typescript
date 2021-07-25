@@ -24,7 +24,7 @@ class Product extends Model
 }
 ```
 
-Laravel TypeScript will generate the following namespaced TypeScript interface:
+Laravel TypeScript will generate the following TypeScript interface:
 
 ```typescript
 declare namespace App.Models {
@@ -41,6 +41,12 @@ declare namespace App.Models {
     ...
 }
 ```
+
+**Laravel TypeScript** supports:
+- [x] Database columns
+- [x] Model relations
+- [x] Model accessors
+- [ ] Casted attributes
 
 ## Installation
 
