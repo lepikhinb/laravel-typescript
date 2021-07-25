@@ -21,6 +21,9 @@ class TypeScriptGenerator
     public function execute()
     {
         $types = $this->phpClasses()
+            ->groupBy(function (ReflectionClass $reflection) {
+                return $reflection->getNamespaceName();
+            })
             ->map(function (Collection $reflections, string $namespace) {
                 return $reflections->map(fn (ReflectionClass $reflection) => $this->generate($reflection))
                     ->whereNotNull()
@@ -82,9 +85,6 @@ class TypeScriptGenerator
                     ->map(fn (string $className) => new ReflectionClass($className))
                     ->reject(fn (ReflectionClass $reflection) => $reflection->isAbstract())
                     ->values();
-            })
-            ->groupBy(function (ReflectionClass $reflection) {
-                return $reflection->getNamespaceName();
             });
     }
 }

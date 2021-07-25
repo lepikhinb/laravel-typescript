@@ -3,7 +3,6 @@
 namespace Based\TypeScript\Definitions;
 
 use ReflectionMethod;
-use ReflectionNamedType;
 use ReflectionUnionType;
 
 class TypeScriptType
