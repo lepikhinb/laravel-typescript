@@ -21,26 +21,27 @@ class TypeScriptGenerator
     public function execute()
     {
         $types = $this->phpClasses()
-            ->groupBy(function (ReflectionClass $reflection) {
-                return $reflection->getNamespaceName();
-            })
-            ->map(function (Collection $reflections, string $namespace) {
-                return $reflections->map(fn (ReflectionClass $reflection) => $this->generate($reflection))
-                    ->whereNotNull()
-                    ->whenNotEmpty(function (Collection $definitions) use ($namespace) {
-                        $tsNamespace = str_replace('\\', '.', $namespace);
-
-                        return $definitions->prepend("declare namespace {$tsNamespace} {")->push('}');
-                    })
-                    ->join(PHP_EOL);
-            })
+            ->groupBy(fn (ReflectionClass $reflection) => $reflection->getNamespaceName())
+            ->map(fn (Collection $reflections, string $namespace) => $this->makeNamespace($namespace, $reflections))
             ->reject(fn (string $namespaceDefinition) => empty($namespaceDefinition))
             ->join(PHP_EOL);
 
         file_put_contents($this->output, $types);
     }
 
-    protected function generate(ReflectionClass $reflection): ?string
+    protected function makeNamespace(string $namespace, Collection $reflections): string
+    {
+        return $reflections->map(fn (ReflectionClass $reflection) => $this->makeInterface($reflection))
+            ->whereNotNull()
+            ->whenNotEmpty(function (Collection $definitions) use ($namespace) {
+                $tsNamespace = str_replace('\\', '.', $namespace);
+
+                return $definitions->prepend("declare namespace {$tsNamespace} {")->push('}');
+            })
+            ->join(PHP_EOL);
+    }
+
+    protected function makeInterface(ReflectionClass $reflection): ?string
     {
         $generator = collect($this->generators)
             ->filter(fn (string $generator, string $baseClass) => $reflection->isSubclassOf($baseClass))
