@@ -13,9 +13,9 @@ class TypeScriptGenerator
 {
     public function __construct(
         public array $generators,
-        public array $paths = [],
         public string $output,
-        public bool $autoloadDev
+        public bool $autoloadDev,
+        public array $paths = []
     ) {
     }
 
