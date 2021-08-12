@@ -22,7 +22,7 @@ class TypeScriptType
     {
         $types = $method->getReturnType() instanceof ReflectionUnionType
             ? $method->getReturnType()->getTypes()
-            : (string)$method->getReturnType();
+            : (string) $method->getReturnType();
 
         return collect($types)
             ->map(function (string $type) {

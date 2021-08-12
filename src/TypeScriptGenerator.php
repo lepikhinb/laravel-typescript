@@ -16,24 +16,24 @@ class TypeScriptGenerator
         public array $paths = [],
         public string $output,
         public bool $autoloadDev
-    )
-    {
+    ) {
     }
 
     public function execute()
     {
         $types = $this->phpClasses()
-            ->groupBy(fn(ReflectionClass $reflection) => $reflection->getNamespaceName())
-            ->map(fn(Collection $reflections, string $namespace) => $this->makeNamespace($namespace, $reflections))
-            ->reject(fn(string $namespaceDefinition) => empty($namespaceDefinition))
-            ->prepend(<<<END
-/**
- * This file is auto generated using 'php artisan typescript-generate'
- *
- * Changes to this file will be lost when the command is run again
- */
+            ->groupBy(fn (ReflectionClass $reflection) => $reflection->getNamespaceName())
+            ->map(fn (Collection $reflections, string $namespace) => $this->makeNamespace($namespace, $reflections))
+            ->reject(fn (string $namespaceDefinition) => empty($namespaceDefinition))
+            ->prepend(
+                <<<END
+                /**
+                 * This file is auto generated using 'php artisan typescript-generate'
+                 *
+                 * Changes to this file will be lost when the command is run again
+                 */
 
-END
+                END
             )
             ->join(PHP_EOL);
 
@@ -42,7 +42,7 @@ END
 
     protected function makeNamespace(string $namespace, Collection $reflections): string
     {
-        return $reflections->map(fn(ReflectionClass $reflection) => $this->makeInterface($reflection))
+        return $reflections->map(fn (ReflectionClass $reflection) => $this->makeInterface($reflection))
             ->whereNotNull()
             ->whenNotEmpty(function (Collection $definitions) use ($namespace) {
                 $tsNamespace = str_replace('\\', '.', $namespace);
@@ -55,7 +55,7 @@ END
     protected function makeInterface(ReflectionClass $reflection): ?string
     {
         $generator = collect($this->generators)
-            ->filter(fn(string $generator, string $baseClass) => $reflection->isSubclassOf($baseClass))
+            ->filter(fn (string $generator, string $baseClass) => $reflection->isSubclassOf($baseClass))
             ->values()
             ->first();
 
@@ -81,10 +81,10 @@ END
                 return collect((new Finder)->in($path)->name('*.php')->files())
                     ->map(function (SplFileInfo $file) use ($path, $namespace) {
                         return $namespace . str_replace(
-                                ['/', '.php'],
-                                ['\\', ''],
-                                Str::after($file->getRealPath(), realpath($path) . DIRECTORY_SEPARATOR)
-                            );
+                            ['/', '.php'],
+                            ['\\', ''],
+                            Str::after($file->getRealPath(), realpath($path) . DIRECTORY_SEPARATOR)
+                        );
                     })
                     ->filter(function (string $className) {
                         try {
@@ -95,8 +95,8 @@ END
                             return false;
                         }
                     })
-                    ->map(fn(string $className) => new ReflectionClass($className))
-                    ->reject(fn(ReflectionClass $reflection) => $reflection->isAbstract())
+                    ->map(fn (string $className) => new ReflectionClass($className))
+                    ->reject(fn (ReflectionClass $reflection) => $reflection->isAbstract())
                     ->values();
             });
     }
