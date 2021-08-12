@@ -28,7 +28,7 @@ class TypeScriptGenerator
             ->prepend(
                 <<<END
                 /**
-                 * This file is auto generated using 'php artisan typescript-generate'
+                 * This file is auto generated using 'php artisan typescript:generate'
                  *
                  * Changes to this file will be lost when the command is run again
                  */
