@@ -8,7 +8,7 @@ use ReflectionUnionType;
 class TypeScriptType
 {
     public const STRING = 'string';
-    public const NUMBER  = 'number';
+    public const NUMBER = 'number';
     public const BOOLEAN = 'boolean';
     public const ANY = 'any';
     public const NULL = 'null';

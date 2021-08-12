@@ -29,7 +29,7 @@ class ModelGenerator extends AbstractGenerator
     /** @var Collection<Column> */
     protected Collection $columns;
 
-    public function getDefinition(): string
+    public function getDefinition(): ?string
     {
         return collect([
             $this->getProperties(),
@@ -40,9 +40,14 @@ class ModelGenerator extends AbstractGenerator
             ->join(PHP_EOL . '        ');
     }
 
+    /**
+     * @throws \Doctrine\DBAL\Exception
+     * @throws \ReflectionException
+     */
     protected function boot(): void
     {
         $this->model = $this->reflection->newInstance();
+
         $this->columns = collect(
             $this->model->getConnection()
                 ->getDoctrineSchemaManager()
@@ -94,7 +99,7 @@ class ModelGenerator extends AbstractGenerator
             ->filter(function (ReflectionMethod $method) {
                 try {
                     return $method->invoke($this->model) instanceof Relation;
-                } catch (Throwable $e) {
+                } catch (Throwable) {
                     return false;
                 }
             })
@@ -125,7 +130,7 @@ class ModelGenerator extends AbstractGenerator
             ->reject(fn (ReflectionMethod $method) => $method->getNumberOfParameters());
     }
 
-    protected function getPropertyType(string $type): string | array
+    protected function getPropertyType(string $type): string|array
     {
         return match ($type) {
             Types::ARRAY => [TypeScriptType::array(), TypeScriptType::ANY],

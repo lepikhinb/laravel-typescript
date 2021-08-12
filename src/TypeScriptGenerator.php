@@ -14,7 +14,8 @@ class TypeScriptGenerator
     public function __construct(
         public array $generators,
         public string $output,
-        public bool $autoloadDev
+        public bool $autoloadDev,
+        public array $paths = []
     ) {
     }
 
@@ -24,6 +25,16 @@ class TypeScriptGenerator
             ->groupBy(fn (ReflectionClass $reflection) => $reflection->getNamespaceName())
             ->map(fn (Collection $reflections, string $namespace) => $this->makeNamespace($namespace, $reflections))
             ->reject(fn (string $namespaceDefinition) => empty($namespaceDefinition))
+            ->prepend(
+                <<<END
+                /**
+                 * This file is auto generated using 'php artisan typescript:generate'
+                 *
+                 * Changes to this file will be lost when the command is run again
+                 */
+
+                END
+            )
             ->join(PHP_EOL);
 
         file_put_contents($this->output, $types);
@@ -36,7 +47,7 @@ class TypeScriptGenerator
             ->whenNotEmpty(function (Collection $definitions) use ($namespace) {
                 $tsNamespace = str_replace('\\', '.', $namespace);
 
-                return $definitions->prepend("declare namespace {$tsNamespace} {")->push('}');
+                return $definitions->prepend("declare namespace {$tsNamespace} {")->push('}' . PHP_EOL);
             })
             ->join(PHP_EOL);
     }
@@ -65,6 +76,7 @@ class TypeScriptGenerator
                     collect($composer->{'autoload-dev'}?->{'psr-4'})
                 );
             })
+            ->merge($this->paths)
             ->flatMap(function (string $path, string $namespace) {
                 return collect((new Finder)->in($path)->name('*.php')->files())
                     ->map(function (SplFileInfo $file) use ($path, $namespace) {
@@ -79,8 +91,8 @@ class TypeScriptGenerator
                             new ReflectionClass($className);
 
                             return true;
-                        } catch (ReflectionException $e) {
-                            //
+                        } catch (ReflectionException) {
+                            return false;
                         }
                     })
                     ->map(fn (string $className) => new ReflectionClass($className))
