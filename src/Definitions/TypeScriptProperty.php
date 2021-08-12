@@ -12,21 +12,22 @@ class TypeScriptProperty
         public bool $optional = false,
         public bool $readonly = false,
         public bool $nullable = false
-    ) {
+    )
+    {
     }
 
     public function getTypes(): string
     {
         return collect($this->types)
-            ->when($this->nullable, fn (Collection $types) => $types->push(TypeScriptType::NULL))
+            ->when($this->nullable, fn(Collection $types) => $types->push(TypeScriptType::NULL))
             ->join(' | ', '');
     }
 
     public function __toString(): string
     {
         return collect($this->name)
-            ->when($this->readonly, fn (Collection $definition) => $definition->prepend('readonly '))
-            ->when($this->optional, fn (Collection $definition) => $definition->push('?'))
+            ->when($this->readonly, fn(Collection $definition) => $definition->prepend('readonly '))
+            ->when($this->optional, fn(Collection $definition) => $definition->push('?'))
             ->push(': ')
             ->push($this->getTypes())
             ->push(';')

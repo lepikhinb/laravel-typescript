@@ -4,7 +4,6 @@ namespace Based\TypeScript\Commands;
 
 use Based\TypeScript\TypeScriptGenerator;
 use Illuminate\Console\Command;
-use Spatie\LaravelPackageTools\Package;
 
 class TypeScriptGenerateCommand extends Command
 {
@@ -15,7 +14,10 @@ class TypeScriptGenerateCommand extends Command
     public function handle()
     {
         $generator = new TypeScriptGenerator(
-            ...config('typescript')
+            generators: config('typescript.generators', []),
+            paths: config('typescript.paths', []),
+            output: config('typescript.output', resource_path('js/models.d.ts')),
+            autoloadDev: config('typescript.autoloadDev', false),
         );
 
         $generator->execute();

@@ -29,22 +29,30 @@ class ModelGenerator extends AbstractGenerator
     /** @var Collection<Column> */
     protected Collection $columns;
 
-    public function getDefinition(): string
+    public function getDefinition(): ?string
     {
         return collect([
             $this->getProperties(),
             $this->getRelations(),
             $this->getAccessors(),
         ])
-            ->filter(fn (string $part) => !empty($part))
+            ->filter(fn(string $part) => !empty($part))
             ->join(PHP_EOL . '        ');
     }
 
+    /**
+     * @throws \Doctrine\DBAL\Exception
+     * @throws \ReflectionException
+     */
     protected function boot(): void
     {
-        $this->model = $this->reflection->newInstance();
+        /** @var Model $model */
+        $model = $this->reflection->newInstance();
+
+        $this->model = $model;
+
         $this->columns = collect(
-            $this->model->getConnection()
+            $model->getConnection()
                 ->getDoctrineSchemaManager()
                 ->listTableColumns($this->model->getConnection()->getTablePrefix() . $this->model->getTable())
         );
@@ -53,7 +61,7 @@ class ModelGenerator extends AbstractGenerator
     protected function getProperties(): string
     {
         return $this->columns->map(function (Column $column) {
-            return (string) new TypeScriptProperty(
+            return (string)new TypeScriptProperty(
                 name: $column->getName(),
                 types: $this->getPropertyType($column->getType()->getName()),
                 nullable: !$column->getNotnull()
@@ -65,20 +73,20 @@ class ModelGenerator extends AbstractGenerator
     protected function getAccessors(): string
     {
         return $this->getMethods()
-            ->filter(fn (ReflectionMethod $method) => Str::startsWith($method->getName(), 'get'))
-            ->filter(fn (ReflectionMethod $method) => Str::endsWith($method->getName(), 'Attribute'))
+            ->filter(fn(ReflectionMethod $method) => Str::startsWith($method->getName(), 'get'))
+            ->filter(fn(ReflectionMethod $method) => Str::endsWith($method->getName(), 'Attribute'))
             ->mapWithKeys(function (ReflectionMethod $method) {
-                $property = (string) Str::of($method->getName())
+                $property = (string)Str::of($method->getName())
                     ->between('get', 'Attribute')
                     ->snake();
 
                 return [$property => $method];
             })
             ->reject(function (ReflectionMethod $method, string $property) {
-                return $this->columns->contains(fn (Column $column) => $column->getName() == $property);
+                return $this->columns->contains(fn(Column $column) => $column->getName() == $property);
             })
             ->map(function (ReflectionMethod $method, string $property) {
-                return (string) new TypeScriptProperty(
+                return (string)new TypeScriptProperty(
                     name: $property,
                     types: TypeScriptType::fromMethod($method),
                     optional: true,
@@ -94,7 +102,7 @@ class ModelGenerator extends AbstractGenerator
             ->filter(function (ReflectionMethod $method) {
                 try {
                     return $method->invoke($this->model) instanceof Relation;
-                } catch (Throwable $e) {
+                } catch (Throwable) {
                     return false;
                 }
             })
@@ -108,7 +116,7 @@ class ModelGenerator extends AbstractGenerator
                     ->isEmpty();
             })
             ->map(function (ReflectionMethod $method) {
-                return (string) new TypeScriptProperty(
+                return (string)new TypeScriptProperty(
                     name: $method->getName(),
                     types: $this->getRelationType($method),
                     optional: true,
@@ -121,11 +129,11 @@ class ModelGenerator extends AbstractGenerator
     protected function getMethods(): Collection
     {
         return collect($this->reflection->getMethods(ReflectionMethod::IS_PUBLIC))
-            ->reject(fn (ReflectionMethod $method) => $method->isStatic())
-            ->reject(fn (ReflectionMethod $method) => $method->getNumberOfParameters());
+            ->reject(fn(ReflectionMethod $method) => $method->isStatic())
+            ->reject(fn(ReflectionMethod $method) => $method->getNumberOfParameters());
     }
 
-    protected function getPropertyType(string $type): string | array
+    protected function getPropertyType(string $type): string|array
     {
         return match ($type) {
             Types::ARRAY => [TypeScriptType::array(), TypeScriptType::ANY],

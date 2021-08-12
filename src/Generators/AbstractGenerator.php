@@ -2,22 +2,27 @@
 
 namespace Based\TypeScript\Generators;
 
-use ReflectionClass;
 use Based\TypeScript\Contracts\Generator;
+use ReflectionClass;
 
 abstract class AbstractGenerator implements Generator
 {
     protected ReflectionClass $reflection;
 
-    public function generate(ReflectionClass $reflection): string
+    public function generate(ReflectionClass $reflection): ?string
     {
         $this->reflection = $reflection;
         $this->boot();
 
+        if (empty(trim($definition = $this->getDefinition()))) {
+            return "    export interface {$this->tsClassName()} {}" . PHP_EOL;
+        }
+
         return <<<TS
             export interface {$this->tsClassName()} {
-                {$this->getDefinition()}
+                $definition
             }
+
         TS;
     }
 

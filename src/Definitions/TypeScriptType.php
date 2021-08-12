@@ -8,7 +8,7 @@ use ReflectionUnionType;
 class TypeScriptType
 {
     public const STRING = 'string';
-    public const NUMBER  = 'number';
+    public const NUMBER = 'number';
     public const BOOLEAN = 'boolean';
     public const ANY = 'any';
     public const NULL = 'null';
@@ -22,7 +22,7 @@ class TypeScriptType
     {
         $types = $method->getReturnType() instanceof ReflectionUnionType
             ? $method->getReturnType()->getTypes()
-            : (string) $method->getReturnType();
+            : (string)$method->getReturnType();
 
         return collect($types)
             ->map(function (string $type) {
