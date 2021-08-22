@@ -24,6 +24,13 @@ class TypeScriptType
             ? $method->getReturnType()->getTypes()
             : (string) $method->getReturnType();
 
+        if (is_string($types) && strpos($types, '?') !== false) {
+            $types = [
+                str_replace('?', '', $types),
+                self::NULL
+            ];
+        }
+
         return collect($types)
             ->map(function (string $type) {
                 return match ($type) {
