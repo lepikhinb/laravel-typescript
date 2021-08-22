@@ -23,6 +23,10 @@ class TypeScriptType
         $types = $method->getReturnType() instanceof ReflectionUnionType
             ? $method->getReturnType()->getTypes()
             : (string) $method->getReturnType();
+        
+        if (is_string($types) and strpos($types, '?') !== false) {
+            $types = [str_replace('?', '', $types), 'null'];
+        }
 
         return collect($types)
             ->map(function (string $type) {
