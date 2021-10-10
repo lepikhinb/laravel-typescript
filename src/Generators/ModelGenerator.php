@@ -114,7 +114,7 @@ class ModelGenerator extends AbstractGenerator
             })
             ->map(function (ReflectionMethod $method) {
                 return (string) new TypeScriptProperty(
-                    name: $method->getName(),
+                    name: Str::snake($method->getName()),
                     types: $this->getRelationType($method),
                     optional: true,
                     nullable: true

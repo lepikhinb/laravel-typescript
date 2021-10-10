@@ -22,9 +22,12 @@ class GeneratorTest extends TestCase
 
         $generator->execute();
 
-        assertFileExists($output);
+        $this->assertFileExists($output);
 
-        assertEquals(3, substr_count(file_get_contents($output), 'interface'));
+        $result = file_get_contents($output);
+
+        $this->assertEquals(3, substr_count($result, 'interface'));
+        $this->assertTrue(strpos($result, 'sub_category?: Based.TypeScript.Tests.Models.Category | null;') > -1);
 
         unlink($output);
     }
