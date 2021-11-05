@@ -41,6 +41,7 @@ class TestCase extends Orchestra
         Schema::create('products', function (Blueprint $table) {
             $table->id();
             $table->foreignId('category_id');
+            $table->foreignId('sub_category_id')->constrained('categories');
             $table->string('name');
             $table->decimal('price');
             $table->json('data')->nullable();

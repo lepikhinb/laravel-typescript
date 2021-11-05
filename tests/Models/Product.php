@@ -13,6 +13,11 @@ class Product extends Model
         return $this->belongsTo(Category::class);
     }
 
+    public function subCategory(): BelongsTo
+    {
+        return $this->belongsTo(Category::class);
+    }
+
     public function features(): HasMany
     {
         return $this->hasMany(Feature::class);
