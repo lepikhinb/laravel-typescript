@@ -4,9 +4,6 @@ namespace Based\TypeScript\Tests;
 
 use Based\TypeScript\TypeScriptGenerator;
 
-use function PHPUnit\Framework\assertEquals;
-use function PHPUnit\Framework\assertFileExists;
-
 class GeneratorTest extends TestCase
 {
     /** @test */
@@ -27,8 +24,8 @@ class GeneratorTest extends TestCase
         $result = file_get_contents($output);
 
         $this->assertEquals(3, substr_count($result, 'interface'));
-        $this->assertTrue(strpos($result, 'sub_category?: Based.TypeScript.Tests.Models.Category | null;') > -1);
-        $this->assertTrue(strpos($result, 'products_count?: number | null;') > -1);
+        $this->assertTrue(str_contains($result, 'sub_category?: Based.TypeScript.Tests.Models.Category | null;'));
+        $this->assertTrue(str_contains($result, 'products_count?: number | null;'));
 
         unlink($output);
     }
