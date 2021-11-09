@@ -68,7 +68,7 @@ class TypeScriptGenerator
 
     protected function phpClasses(): Collection
     {
-        $composer = json_decode(file_get_contents(__DIR__ . './../composer.json'));
+        $composer = json_decode(file_get_contents(realpath('composer.json')));
 
         return collect($composer->autoload->{'psr-4'})
             ->when($this->autoloadDev, function (Collection $paths) use ($composer) {
