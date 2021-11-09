@@ -34,6 +34,7 @@ class ModelGenerator extends AbstractGenerator
         return collect([
             $this->getProperties(),
             $this->getRelations(),
+            $this->getManyRelations(),
             $this->getAccessors(),
         ])
             ->filter(fn (string $part) => !empty($part))
@@ -95,6 +96,35 @@ class ModelGenerator extends AbstractGenerator
 
     protected function getRelations(): string
     {
+        return $this->getRelationMethods()
+            ->map(function (ReflectionMethod $method) {
+                return (string) new TypeScriptProperty(
+                    name: Str::snake($method->getName()),
+                    types: $this->getRelationType($method),
+                    optional: true,
+                    nullable: true
+                );
+            })
+            ->join(PHP_EOL . '        ');
+    }
+
+    protected function getManyRelations(): string
+    {
+        return $this->getRelationMethods()
+            ->filter(fn (ReflectionMethod $method) => $this->isManyRelation($method))
+            ->map(function (ReflectionMethod $method) {
+                return (string) new TypeScriptProperty(
+                    name: Str::snake($method->getName()) . '_count',
+                    types: TypeScriptType::NUMBER,
+                    optional: true,
+                    nullable: true
+                );
+            })
+            ->join(PHP_EOL . '        ');
+    }
+
+    protected function getRelationMethods(): Collection
+    {
         return $this->getMethods()
             ->filter(function (ReflectionMethod $method) {
                 try {
@@ -111,16 +141,7 @@ class ModelGenerator extends AbstractGenerator
                         return $trait->hasMethod($method->name);
                     })
                     ->isEmpty();
-            })
-            ->map(function (ReflectionMethod $method) {
-                return (string) new TypeScriptProperty(
-                    name: Str::snake($method->getName()),
-                    types: $this->getRelationType($method),
-                    optional: true,
-                    nullable: true
-                );
-            })
-            ->join(PHP_EOL . '        ');
+            });
     }
 
     protected function getMethods(): Collection
@@ -167,17 +188,45 @@ class ModelGenerator extends AbstractGenerator
         $relationReturn = $method->invoke($this->model);
         $related = str_replace('\\', '.', get_class($relationReturn->getRelated()));
 
-        return match (get_class($relationReturn)) {
-            HasMany::class => TypeScriptType::array($related),
-            BelongsToMany::class => TypeScriptType::array($related),
-            HasManyThrough::class => TypeScriptType::array($related),
-            MorphMany::class => TypeScriptType::array($related),
-            MorphToMany::class => TypeScriptType::array($related),
-            HasOne::class => $related,
-            BelongsTo::class => $related,
-            MorphOne::class => $related,
-            HasOneThrough::class => $related,
-            default => 'any',
-        };
+        if ($this->isManyRelation($method)) {
+            return TypeScriptType::array($related);
+        }
+
+        if ($this->isOneRelattion($method)) {
+            return $related;
+        }
+
+        return TypeScriptType::ANY;
+    }
+
+    protected function isManyRelation(ReflectionMethod $method): bool
+    {
+        $relationType = get_class($method->invoke($this->model));
+
+        return in_array(
+            $relationType,
+            [
+                HasMany::class,
+                BelongsToMany::class,
+                HasManyThrough::class,
+                MorphMany::class,
+                MorphToMany::class,
+            ]
+        );
+    }
+
+    protected function isOneRelattion(ReflectionMethod $method): bool
+    {
+        $relationType = get_class($method->invoke($this->model));
+
+        return in_array(
+            $relationType,
+            [
+                HasOne::class,
+                BelongsTo::class,
+                MorphOne::class,
+                HasOneThrough::class,
+            ]
+        );
     }
 }

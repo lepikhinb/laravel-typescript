@@ -28,6 +28,7 @@ class GeneratorTest extends TestCase
 
         $this->assertEquals(3, substr_count($result, 'interface'));
         $this->assertTrue(strpos($result, 'sub_category?: Based.TypeScript.Tests.Models.Category | null;') > -1);
+        $this->assertTrue(strpos($result, 'products_count?: number | null;') > -1);
 
         unlink($output);
     }
