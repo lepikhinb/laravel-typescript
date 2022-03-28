@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use ReflectionClass;
 use ReflectionMethod;
 use Throwable;
@@ -28,6 +29,12 @@ class ModelGenerator extends AbstractGenerator
     protected Model $model;
     /** @var Collection<Column> */
     protected Collection $columns;
+
+    public function __construct()
+    {
+        // Enums aren't supported by DBAL, so map enum columns to string.
+        DB::getDoctrineSchemaManager()->getDatabasePlatform()->registerDoctrineTypeMapping('enum', 'string');
+    }
 
     public function getDefinition(): ?string
     {
