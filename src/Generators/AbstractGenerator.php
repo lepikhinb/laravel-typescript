@@ -6,13 +6,12 @@ namespace Based\TypeScript\Generators;
 
 use Based\TypeScript\Contracts\Generator;
 use ReflectionClass;
-use ReflectionEnum;
 
 abstract class AbstractGenerator implements Generator
 {
     protected ReflectionClass $reflection;
 
-    public function generate(ReflectionClass|ReflectionEnum $reflection): ?string
+    public function generate(ReflectionClass $reflection): ?string
     {
         $this->reflection = $reflection;
         $this->boot();
