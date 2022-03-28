@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Based\TypeScript\Definitions;
 
 use Illuminate\Support\Collection;
