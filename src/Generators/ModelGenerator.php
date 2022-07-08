@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Based\TypeScript\Generators;
 
 use Based\TypeScript\Definitions\TypeScriptProperty;
 use Based\TypeScript\Definitions\TypeScriptType;
 use Doctrine\DBAL\Schema\Column;
 use Doctrine\DBAL\Types\Types;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -22,7 +25,13 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use ReflectionClass;
 use ReflectionMethod;
+use ReflectionEnum;
+use ReflectionEnumUnitCase;
+use ReflectionEnumBackedCase;
+use ReflectionFunction;
 use Throwable;
+use function collect;
+use function enum_exists;
 
 class ModelGenerator extends AbstractGenerator
 {
@@ -43,6 +52,7 @@ class ModelGenerator extends AbstractGenerator
             $this->getRelations(),
             $this->getManyRelations(),
             $this->getAccessors(),
+            $this->getAttributeAccessors()
         ])
             ->filter(fn (string $part) => !empty($part))
             ->join(PHP_EOL . '        ');
@@ -61,14 +71,41 @@ class ModelGenerator extends AbstractGenerator
                 ->getDoctrineSchemaManager()
                 ->listTableColumns($this->model->getConnection()->getTablePrefix() . $this->model->getTable())
         );
+        
+        $this->enumCasts = $this->getEnumCasts();
+    }
+
+    /**
+     * @return Collection<string, ReflectionEnum>
+     * @throws \ReflectionException
+     */
+    protected function getEnumCasts(): Collection
+    {
+        return collect($this->model->getCasts())
+            ->filter(fn(string $cast) => enum_exists($cast))
+            ->mapWithKeys(fn(string $cast, string $columnName) => [$columnName => new ReflectionEnum($cast)]);
     }
 
     protected function getProperties(): string
     {
         return $this->columns->map(function (Column $column) {
+            if ($this->enumCasts->has($column->getName())) {
+                /** @var ReflectionEnum $refl */
+                $refl = $this->enumCasts->get($column->getName());
+                $types = collect($refl->getCases())
+                    ->map(function (ReflectionEnumUnitCase|ReflectionEnumBackedCase $case) {
+                       if ($case instanceof ReflectionEnumBackedCase) {
+                           return sprintf("'%s'", $case->getValue()->value);
+                       }
+                       return sprintf("'%s'", $case->getValue()->name);
+                    })
+                ->join(' | ');
+            } else {
+                $types = $this->getPropertyType($column->getType()->getName());
+            }
             return (string) new TypeScriptProperty(
                 name: $column->getName(),
-                types: $this->getPropertyType($column->getType()->getName()),
+                types: $types,
                 nullable: !$column->getNotnull()
             );
         })
@@ -156,6 +193,36 @@ class ModelGenerator extends AbstractGenerator
         return collect($this->reflection->getMethods(ReflectionMethod::IS_PUBLIC))
             ->reject(fn (ReflectionMethod $method) => $method->isStatic())
             ->reject(fn (ReflectionMethod $method) => $method->getNumberOfParameters());
+    }
+
+    protected function getAttributeAccessors(): string
+    {
+        return $this->getMethods()
+            ->filter(fn (ReflectionMethod $method) => $method->hasReturnType() &&
+                $method->getReturnType()->getName() === Attribute::class
+            )
+            ->mapWithKeys(function (ReflectionMethod $method) {
+                $property = Str::snake($method->getName());
+                $returnAttribute = $this->model->{$method->getName()}();
+                $reflectFn = new ReflectionFunction($returnAttribute->get);
+                return [$property => $reflectFn];
+            })
+            ->reject(function (ReflectionFunction $function, string $property) {
+                return $this->columns->contains(fn (Column $column) => $column->getName() === $property) ||
+                    !$function->hasReturnType();
+            })
+            ->map(function (ReflectionFunction $function, string $property) {
+                // Optional only if not in appends.
+                // TODO getAccessors() should do the same btw.
+                return (string) new TypeScriptProperty(
+                    name: $property,
+                    types: $this->getPropertyType($function->getReturnType()->getName()),
+                    optional: !$this->model->hasAppended($property),
+                    readonly: true,
+                    nullable: true,
+                );
+            })
+            ->join(PHP_EOL . '        ');
     }
 
     protected function getPropertyType(string $type): string|array
