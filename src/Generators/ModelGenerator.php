@@ -60,7 +60,7 @@ class ModelGenerator extends AbstractGenerator
             $this->model->getConnection()
                 ->getDoctrineSchemaManager()
                 ->listTableColumns($this->model->getConnection()->getTablePrefix() . $this->model->getTable())
-        );
+        )->filter(fn ($prop, $key) => !in_array($key, $this->model->getHidden()));
     }
 
     protected function getProperties(): string
