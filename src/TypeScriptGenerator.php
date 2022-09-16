@@ -22,6 +22,7 @@ class TypeScriptGenerator
     public function execute()
     {
         $types = $this->phpClasses()
+            ->sortBy(fn (ReflectionClass $reflection) => $reflection->getName())
             ->groupBy(fn (ReflectionClass $reflection) => $reflection->getNamespaceName())
             ->map(fn (Collection $reflections, string $namespace) => $this->makeNamespace($namespace, $reflections))
             ->reject(fn (string $namespaceDefinition) => empty($namespaceDefinition))
