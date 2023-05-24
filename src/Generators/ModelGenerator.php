@@ -77,6 +77,11 @@ class ModelGenerator extends AbstractGenerator
 
     protected function getAccessors(): string
     {
+        $relationsToSkip =  $this->getRelationMethods()
+            ->map(function (ReflectionMethod $method) {
+                return Str::snake($method->getName());
+            });
+
         return $this->getMethods()
             ->filter(fn (ReflectionMethod $method) => Str::startsWith($method->getName(), 'get'))
             ->filter(fn (ReflectionMethod $method) => Str::endsWith($method->getName(), 'Attribute'))
@@ -89,6 +94,9 @@ class ModelGenerator extends AbstractGenerator
             })
             ->reject(function (ReflectionMethod $method, string $property) {
                 return $this->columns->contains(fn (Column $column) => $column->getName() == $property);
+            })
+            ->reject(function (ReflectionMethod $method, string $property) use ($relationsToSkip) {
+                return $relationsToSkip->contains($property);
             })
             ->map(function (ReflectionMethod $method, string $property) {
                 return (string) new TypeScriptProperty(
