@@ -27,6 +27,7 @@ class RequestGenerator extends AbstractGenerator
         'nullable',
         'confirmed',
         'same',
+        'present',
     ];
 
     protected FormRequest $request;
