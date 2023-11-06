@@ -19,14 +19,19 @@ class TypeScriptGenerator
     ) {
     }
 
-    public function execute()
+    public function execute($multiple = false)
     {
-        $types = $this->phpClasses()
-            ->groupBy(fn (ReflectionClass $reflection) => $reflection->getNamespaceName())
-            ->map(fn (Collection $reflections, string $namespace) => $this->makeNamespace($namespace, $reflections))
-            ->reject(fn (string $namespaceDefinition) => empty($namespaceDefinition))
-            ->prepend(
-                <<<END
+        $phpClasses = $this->phpClasses();
+        $typeScriptDefinitions = [];
+
+        foreach ($phpClasses as $reflection) {
+            $namespace = $reflection->getNamespaceName();
+            $className = $reflection->getShortName();
+
+            $typeScriptDefinition = $this->makeNamespace($namespace, collect([$reflection]));
+
+            if (!empty($typeScriptDefinition)) {
+                $typeScriptDefinition = <<<END
                 /**
                  * This file is auto generated using 'php artisan typescript:generate'
                  *
@@ -34,10 +39,19 @@ class TypeScriptGenerator
                  */
 
                 END
-            )
-            ->join(PHP_EOL);
+                . $typeScriptDefinition;
 
-        file_put_contents($this->output, $types);
+                if ($multiple) {
+                    file_put_contents($this->output.'/'.$className . '.ts', $typeScriptDefinition);
+                } else {
+                    $typeScriptDefinitions[] = $typeScriptDefinition;
+                }
+            }
+        }
+
+        if (!$multiple && !empty($typeScriptDefinitions)) {
+            file_put_contents($this->output, implode(PHP_EOL, $typeScriptDefinitions));
+        }
     }
 
     protected function makeNamespace(string $namespace, Collection $reflections): string
